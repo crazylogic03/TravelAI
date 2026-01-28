@@ -14,7 +14,129 @@ datasource db {
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  
+  // Relations
+  trips     Trip[]
+  chats     ChatSession[]
+  payments  Payment[]
+}
+
+
+model Trip {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  name        String    
+  budget      Float     
+  startDate   DateTime
+  endDate     DateTime
+  source      String    
+  status      TripStatus @default(PLANNED)
+  user        User      @relation(fields: [userId], references: [id])
+  itinerary   ItineraryItem[]
+  bookings    Booking[]
+}
+
+
+model Destination {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?  @db.Text
+  latitude    Float    
+  longitude   Float   
+  category    Category 
+  avgCost     Float    
+  popularity  Int      
+  itineraryItems ItineraryItem[]
+}
+
+
+model ItineraryItem {
+  id            Int      @id @default(autoincrement())
+  tripId        Int
+  destinationId Int
+  
+  dayNumber     Int      
+  orderIndex    Int      
+  trip          Trip        @relation(fields: [tripId], references: [id])
+  destination   Destination @relation(fields: [destinationId], references: [id])
+}
+
+model Booking {
+  id          Int      @id @default(autoincrement())
+  tripId      Int
+  type        BookingType
+  provider    String  
+  pnr         String?
+  cost        Float
+  departureTime DateTime
+  arrivalTime   DateTime?
+  trip        Trip     @relation(fields: [tripId], references: [id])
+}
+
+model ChatSession {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  createdAt DateTime @default(now())
+  messages  ChatMessage[]
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  sessionId Int
+  sender    SenderType 
+  text      String   @db.Text
+  timestamp DateTime @default(now())
+  session   ChatSession @relation(fields: [sessionId], references: [id])
+}
+
+
+model Payment {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  amount        Float
+  currency      String   @default("INR")
+  status        PaymentStatus
+  transactionId String   @unique
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id])
+}
+
+
+enum TripStatus {
+  PLANNED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum Category {
+  BEACH
+  MOUNTAIN
+  HISTORICAL
+  CITY
+  NATURE
+}
+
+enum BookingType {
+  FLIGHT
+  TRAIN
+  BUS
+  HOTEL
+}
+
+enum SenderType {
+  USER
+  AI
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
 }
