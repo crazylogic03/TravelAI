@@ -78,6 +78,62 @@ exports.getTripDetails = async (req, res) => {
     }
 };
 
+
+exports.addItineraryItem = async (req, res) => {
+    try {
+        const tripId = Number(req.params.tripId);
+        const { destinationId, dayNumber, orderIndex } = req.body;
+
+        if (!destinationId || !dayNumber || orderIndex === undefined) {
+            return res.status(400).json({ message: "Missing itinerary data" });
+        }
+
+        const trip = await prisma.trip.findFirst({
+            where: { id: tripId, userId: req.user.id },
+            include: {
+                itinerary: {
+                    include: { destination: true }
+                }
+            }
+        });
+
+        if (!trip) {
+            return res.status(404).json({ message: "Trip not found" });
+        }
+
+        const destination = await prisma.destination.findUnique({
+            where: { id: Number(destinationId) }
+        });
+
+        if (!destination) {
+            return res.status(404).json({ message: "Destination not found" });
+        }
+
+        const currentCost = trip.itinerary.reduce(
+            (sum, item) => sum + item.destination.avgCost,
+            0
+        );
+
+        if (currentCost + destination.avgCost > trip.budget) {
+            return res.status(400).json({ message: "Budget exceeded" });
+        }
+
+        const itineraryItem = await prisma.itineraryItem.create({
+            data: {
+                tripId,
+                destinationId: Number(destinationId),
+                dayNumber: Number(dayNumber),
+                orderIndex: Number(orderIndex)
+            }
+        });
+
+        res.status(201).json(itineraryItem);
+    } catch (err) {
+        console.error("Add itinerary item error:", err);
+        res.status(500).json({ message: "Failed to add itinerary item" });
+    }
+};
+
 exports.addDestination = async (req, res) => {
     const dest = await prisma.destination.create({
         data: { ...req.body, tripId: Number(req.params.tripId) }
