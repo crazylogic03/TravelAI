@@ -41,11 +41,41 @@ exports.getTrips = async (req, res) => {
 };
 
 exports.getTripDetails = async (req, res) => {
-    const trip = await prisma.trip.findUnique({
-        where: { id: Number(req.params.tripId) },
-        include: { destinations: true, bookings: true }
-    });
-    res.json(trip);
+    try {
+        const tripId = Number(req.params.tripId);
+
+        if (isNaN(tripId)) {
+            return res.status(400).json({ message: "Invalid trip ID" });
+        }
+
+        const trip = await prisma.trip.findFirst({
+            where: {
+                id: tripId,
+                userId: req.user.id
+            },
+            include: {
+                itinerary: {
+                    include: {
+                        destination: true
+                    },
+                    orderBy: [
+                        { dayNumber: "asc" },
+                        { orderIndex: "asc" }
+                    ]
+                },
+                bookings: true
+            }
+        });
+
+        if (!trip) {
+            return res.status(404).json({ message: "Trip not found" });
+        }
+
+        res.status(200).json(trip);
+    } catch (err) {
+        console.error("Get trip details error:", err);
+        res.status(500).json({ message: "Failed to fetch trip details" });
+    }
 };
 
 exports.addDestination = async (req, res) => {
