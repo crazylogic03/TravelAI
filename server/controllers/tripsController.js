@@ -133,6 +133,60 @@ exports.addItineraryItem = async (req, res) => {
         res.status(500).json({ message: "Failed to add itinerary item" });
     }
 };
+exports.deleteItineraryItem = async (req, res) => {
+    try {
+        const itemId = Number(req.params.itemId);
+
+        const item = await prisma.itineraryItem.findUnique({
+            where: { id: itemId },
+            include: { trip: true }
+        });
+
+        if (!item || item.trip.userId !== req.user.id) {
+            return res.status(404).json({ message: "Itinerary item not found" });
+        }
+
+        await prisma.itineraryItem.delete({
+            where: { id: itemId }
+        });
+
+        res.status(200).json({ message: "Itinerary item removed" });
+    } catch (err) {
+        console.error("Delete itinerary item error:", err);
+        res.status(500).json({ message: "Failed to remove itinerary item" });
+    }
+};
+
+
+
+exports.updateTripStatus = async (req, res) => {
+    try {
+        const tripId = Number(req.params.tripId);
+        const { status } = req.body;
+
+        if (!status) {
+            return res.status(400).json({ message: "Status is required" });
+        }
+
+        const trip = await prisma.trip.findFirst({
+            where: { id: tripId, userId: req.user.id }
+        });
+
+        if (!trip) {
+            return res.status(404).json({ message: "Trip not found" });
+        }
+
+        const updatedTrip = await prisma.trip.update({
+            where: { id: tripId },
+            data: { status }
+        });
+
+        res.status(200).json(updatedTrip);
+    } catch (err) {
+        console.error("Update trip status error:", err);
+        res.status(500).json({ message: "Failed to update trip status" });
+    }
+};
 
 exports.addDestination = async (req, res) => {
     const dest = await prisma.destination.create({
@@ -141,12 +195,40 @@ exports.addDestination = async (req, res) => {
     res.json(dest);
 };
 
+
+
+
 exports.voteDestination = async (req, res) => {
-    const dest = await prisma.destination.update({
-        where: { id: Number(req.params.destId) },
-        data: { votes: { increment: 1 } }
-    });
-    res.json(dest);
+    try {
+        const destinationId = Number(req.params.destinationId);
+
+        if (isNaN(destinationId)) {
+            return res.status(400).json({ message: "Invalid destination ID" });
+        }
+
+        const destination = await prisma.destination.findUnique({
+            where: { id: destinationId }
+        });
+
+        if (!destination) {
+            return res.status(404).json({ message: "Destination not found" });
+        }
+
+        const updated = await prisma.destination.update({
+            where: { id: destinationId },
+            data: {
+                popularity: { increment: 1 }
+            }
+        });
+
+        res.status(200).json({
+            message: "Vote recorded",
+            popularity: updated.popularity
+        });
+    } catch (err) {
+        console.error("Vote destination error:", err);
+        res.status(500).json({ message: "Failed to vote destination" });
+    }
 };
 
 exports.deleteDestination = async (req, res) => {
