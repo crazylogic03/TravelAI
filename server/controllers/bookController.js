@@ -1,4 +1,4 @@
-const prisma = require("../prismaClient");
+const prisma = require("../prisma/client");
 
 exports.addBooking = async (req, res) => {
     try {

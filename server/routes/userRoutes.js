@@ -5,4 +5,6 @@ const jwt = require("jsonwebtoken");
 const router = express.Router()
 
 router.post("/signup", signup);
-router.post("/login", signin);
+router.post("/login", login);
+
+module.exports = router;
