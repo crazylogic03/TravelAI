@@ -27,10 +27,17 @@ exports.createTrip = async (req, res) => {
 };
 
 exports.getTrips = async (req, res) => {
-    const trips = await prisma.trip.findMany({
-        where: { userId: req.user.id }
-    });
-    res.json(trips);
+    try {
+        const trips = await prisma.trip.findMany({
+            where: { userId: req.user.id },
+            orderBy: { createdAt: "desc" }
+        });
+
+        res.status(200).json(trips);
+    } catch (err) {
+        console.error("Get trips error:", err);
+        res.status(500).json({ message: "Failed to fetch trips" });
+    }
 };
 
 exports.getTripDetails = async (req, res) => {
