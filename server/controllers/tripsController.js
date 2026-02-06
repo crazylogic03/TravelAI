@@ -1,10 +1,29 @@
 const prisma = require("../prisma/client");
 
 exports.createTrip = async (req, res) => {
-    const trip = await prisma.trip.create({
-        data: { ...req.body, userId: req.user.id }
-    });
-    res.json(trip);
+    try {
+        const { name, budget, startDate, endDate, source } = req.body;
+
+        if (!name || !budget || !startDate || !endDate || !source) {
+            return res.status(400).json({ message: "Missing trip details" });
+        }
+
+        const trip = await prisma.trip.create({
+            data: {
+                name,
+                budget: Number(budget),
+                startDate: new Date(startDate),
+                endDate: new Date(endDate),
+                source,
+                userId: req.user.id
+            }
+        });
+
+        res.status(201).json(trip);
+    } catch (err) {
+        console.error("Create trip error:", err);
+        res.status(500).json({ message: "Failed to create trip" });
+    }
 };
 
 exports.getTrips = async (req, res) => {

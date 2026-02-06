@@ -1,8 +1,12 @@
 const prisma = require("../prismaClient");
 
 exports.addBooking = async (req, res) => {
-    const booking = await prisma.booking.create({ data: req.body });
-    res.json(booking);
+    try {
+        const booking = await prisma.booking.create({ data: req.body });
+        res.status(201).json(booking);
+    } catch {
+        res.status(500).json({ message: "Booking failed" });
+    }
 };
 
 exports.getBookings = async (req, res) => {
